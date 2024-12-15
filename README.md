@@ -32,6 +32,7 @@ where PATH_TO_XBUTIL is the install path for xbutil and DEVICE_ID is the device 
 -Then run the ./testcases.sh  
 -A .txt file (which is in CSV format) called answers.txt will be found in src/bin  
 -ColumnJ is the FPGA runtime in seconds.  
+-Please note answers.txt is an appended file. Therefore, it is advised to remove it for new runs.
 
 To run MiniSat or Kissat:  
 -First clone repository and follow the install instructions provided by those authors.  
