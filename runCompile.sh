@@ -58,6 +58,7 @@ compile_opencl(){
 	IS_HW_SIM="-DHW_SIM"
 
 	cd src
+	mkdir -p obj
 	echo -e "${CY}Running Vitis make for $EMU_TYPE... ${NC}"
 
 	if [[ $EMU_TYPE == hw_emu ]]
