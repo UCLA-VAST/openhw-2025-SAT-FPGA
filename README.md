@@ -30,4 +30,5 @@ cd src/bin
 ```
 
 -To verify our solver, the SAT instance needed to match other solvers. Therefore, you must know beforehand if it is SAT(1) or UNSAT(0).  
--Note that our solver may not be able to solve the instance due to running out of on-chip memory during the solving process. 
+-Note that our solver may not be able to solve the instance due to running out of on-chip memory during the solving process.  
+-The maximum supported instance size is 32,768 variables and 131,072 clauses.
