@@ -16,8 +16,8 @@ Software Version:
 -XRT 2.14.384
 
 Brief Description of Project:
-The Boolean satisfiability (SAT) problem is a fundamental problem in computer science and is the first problem shownto be NP-complete. 
-SAT solvers have been widely usedin many applications such as circuit verification, FPGA routing, program synthesis, quantumcomputing compilation, and are now being usedin the emerging field of Explainable AI.
+The Boolean satisfiability (SAT) problem is a fundamental problem in computer science and is the first problem shown to be NP-complete. 
+SAT solvers have been widely used in many applications such as circuit verification, FPGA routing, program synthesis, quantum computing compilation, and are now being used in the emerging field of Explainable AI.
 This project is a complete on-chip only SAT solver implementing clause learning, VSIDS decision heuristic, clause minimization, Literal Block Distance deletion scoring, phase saving, Luby restart.
 
 Description of archive:
