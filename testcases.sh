@@ -1,3 +1,9 @@
+RESULT_FILE=$2
+CSV_HEADER="CNF NAME,SOLVE STATUS,Literals,Clauses,Time (s),Decisions,Conflcits,Restarts,Load Cycle,Load %,Decide Cycle,Decide %,Propagate Cycle,Propagate %,Learn Cycle,Learn %,Min-Btrk Cycle,Min-Btrk %,Save Cycle,Save %,Allocate Cycle,Allocate %,NOT USED,NOT USED,Delete Cycle,Delete %,Literals Checked,Average Propagation Latency,Total Cycles"
+# Write header if file does not exist or is empty
+if [ ! -s "$RESULT_FILE" ]; then
+	echo "$CSV_HEADER" > "$RESULT_FILE"
+fi
 #!/bin/bash
 
 RD="\033[0;31m"
@@ -86,7 +92,7 @@ for GET_BENCHMARK in "${BENCHMARKS[@]}"
 do
     IFS=, read path correct <<< $GET_BENCHMARK
     #yes | xbutil reset -d 0000:81:00.1
-	./test.hw.out workload-hw.xclbin ../configuration.json $path answers.txt $correct
+	./test.hw.out workload-hw.xclbin $1 $path $2 $correct
 
 	exitCode=$?
     if [ $exitCode -ne 0 ]

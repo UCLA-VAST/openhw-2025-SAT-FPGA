@@ -1,3 +1,9 @@
+RESULT_FILE=$3
+CSV_HEADER="CNF NAME,SOLVE STATUS,Literals,Clauses,Time (s),Decisions,Conflcits,Restarts,Load Cycle,Load %,Decide Cycle,Decide %,Propagate Cycle,Propagate %,Learn Cycle,Learn %,Min-Btrk Cycle,Min-Btrk %,Save Cycle,Save %,Allocate Cycle,Allocate %,NOT USED,NOT USED,Delete Cycle,Delete %,Literals Checked,Average Propagation Latency,Total Cycles"
+# Write header if file does not exist or is empty
+if [ ! -s "$RESULT_FILE" ]; then
+	echo "$CSV_HEADER" > "$RESULT_FILE"
+fi
 #!/bin/bash
 
 RD="\033[0;31m"

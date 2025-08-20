@@ -81,7 +81,7 @@ add_custom_target(linkkernel DEPENDS hls_link_${EMU_TYPE})
 if(EMU_TYPE STREQUAL "hw")
   add_custom_target(run
     COMMAND ${CMAKE_COMMAND} -E env DATA_PATH=${DATA_PATH}
-            ${CMAKE_SOURCE_DIR}/testcases.sh ${CONFIG_FILE}
+            ${CMAKE_SOURCE_DIR}/testcases.sh ${CONFIG_FILE} ${CMAKE_BINARY_DIR}/result_hw.txt
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     DEPENDS host_${EMU_TYPE} hls_link_${EMU_TYPE}
   )
