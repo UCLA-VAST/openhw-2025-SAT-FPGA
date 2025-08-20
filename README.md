@@ -1,35 +1,31 @@
-# SAT-Accel (FPGA25 Artifact)
-
-Modern SAT solver accelerated on AMD/Xilinx FPGA. This repo uses a clean CMake + Make flow with per-EMU build dirs under `build/<emu>/bin`.
+# A Complete SAT Solver on a U55C FPGA (Team AOHW25-894)
+This project demonstrates accelerating a complete SAT solver on a U55C FPGA. SAT solving is an important workload due to its wide use in different domains such as artificial intelligence, circuit verification, FPGA routing, etc.
 
 ## Prerequisites
 - XRT 2.14.384
 - Vitis 2022.2 (HLS toolchain available)
 - Platform: `xilinx_u55c_gen3x16_xdma_3_202210_1`
-- gcc/g++ 10+
+- gcc/g++ 11.4.0
+- cmake 3.26.3
+- ubuntu 22.04.2
 
-Environment setup options
-- Option A: source `env.sh` at the repo root, which sets up the Xilinx toolchains (XRT/Vitis HLS) so CMake can find headers and libraries.
-- Option B: ensure XRT and Vitis HLS are on PATH yourself (xbutil available; Vitis HLS settings sourced).
-
-Example:
+Ensure XRT and Vitis HLS are on PATH (`source env.sh`). Or manually:
 ```bash
 source /opt/xilinx/xrt/setup.sh
 source /opt/xilinx/tools/Vitis_HLS/2022.2/settings64.sh
 ```
 
 ## Repository layout
-- `host/` – host application sources and headers
-- `hls/src/` – HLS kernel sources
-- `include/` – shared headers (includes `include/rapidjson`)
-- `config/` – configuration files (`configuration.json`, `k2k.cfg`)
-- `SAT_test_cases/` – input DIMACS instances
-- `FPGArpt/` – HLS reports (generated for `EMU_TYPE=hw`)
+- `host/` – host sources
+- `hls/` – HLS kernel sources
+- `include/` – shared headers
+- `config/` – HLS kernel configuration and connectivity files
+- `SAT_test_cases/` – example SAT instances (DIMACS format)
 
 ## Quick start (Makefile shortcuts)
-Choose an emulation type: `sw_emu | hw_emu | hw`. Use EMU_TYPE to select the mode.
+Choose an emulation type: `sw_emu | hw_emu | hw`. Use `EMU_TYPE` to select the mode. The following commands runs the tests found in [SAT_test_cases](SAT_test_cases) for each emulation type.
 
-Software emulation end-to-end:
+Software emulation end-to-end (if run terminates, try `ulimit -s 131072`):
 ```bash
 make EMU_TYPE=sw_emu run -j
 ```
@@ -39,73 +35,56 @@ Hardware emulation end-to-end:
 make EMU_TYPE=hw_emu run -j
 ```
 
-Hardware bitstream link (no run):
+Hardware bitstream end-to-end:
 ```bash
-make EMU_TYPE=hw linkkernel -j
+make EMU_TYPE=hw run -j
 ```
 
 ## Makefile targets
 - `configure`  – configure CMake in `build/<EMU_TYPE>`
-- `compilecl`  – build the host app for `<EMU_TYPE>`
+- `compilecl`  – build the host binary for `<EMU_TYPE>`
 - `compilekernel` – compile all kernels to `.xo` for `<EMU_TYPE>` (parallel)
-- `linkkernel` – link `.xo` into `workload-<EMU_TYPE>.xclbin`
+- `linkkernel` – link all `.xo` into `workload-<EMU_TYPE>.xclbin`
 - `run`        – build and run the testcase suite for `<EMU_TYPE>`
-- `hw_reports` – copy HLS synth reports into `FPGArpt/` (only meaningful for `EMU_TYPE=hw`)
+- `hw_reports` – copy HLS synth reports into `FPGArpt/` (only used for `EMU_TYPE=hw`)
 - `clean`      – remove only `build/<EMU_TYPE>`
 - `clean-all`  – remove the entire `build/`
 
 Tip: pass `-j` for parallel builds. Example: `make EMU_TYPE=hw_emu compilekernel -j`.
 
-## Advanced: direct CMake usage
+## Direct CMake usage
 You can work directly with CMake/Make targets if you prefer:
 ```bash
-cmake -S . -B build/sw_emu -DEMU_TYPE=sw_emu
-cmake --build build/sw_emu --target compilecl --parallel
-cmake --build build/sw_emu --target compilekernel --parallel
-cmake --build build/sw_emu --target linkkernel --parallel
-cmake --build build/sw_emu --target run --parallel
+cmake -S . -B build/<EMU_TYPE> -DEMU_TYPE=<EMU_TYPE>
+cmake --build build/<EMU_TYPE> --target compilecl --parallel
+cmake --build build/<EMU_TYPE> --target compilekernel --parallel
+cmake --build build/<EMU_TYPE> --target linkkernel --parallel
+cmake --build build/<EMU_TYPE> --target run --parallel
 ```
 
 Generated artifacts (per EMU):
-- `build/<emu>/bin/test.<emu>.out`
-- `build/<emu>/bin/workload-<emu>.xclbin`
-- `build/<emu>/bin/emconfig.json`
+- `build/<EMU_TYPE>/bin/test.<EMU_TYPE>.out`: host binary
+- `build/<EMU_TYPE>/bin/workload-<EMU_TYPE>.xclbin`: HLS kernel XCLBIN
+- `build/<EMU_TYPE>/result_<EMU_TYPE>.txt`: run results
 
 ## Running testcases and custom inputs
 The `run` target executes the appropriate testcase script based on `EMU_TYPE`:
-- `sw_emu` and `hw_emu`: runs `testcases_sim.sh` and writes `result_<emu>.txt` into `build/<emu>/bin`.
-- `hw`: runs `testcases.sh` on the board.
+- `sw_emu` and `hw_emu`: runs `testcases_sim.sh`
+- `hw`: runs `testcases.sh` on the board
 
-You can also run the host manually from `build/<emu>/bin`:
+You can also run the host manually from `build/<EMU_TYPE>/bin` on your own SAT instances:
 ```bash
 # Emulation
-XCL_EMULATION_MODE=<emu> ./test.<emu>.out workload-<emu>.xclbin ../../config/configuration.json <DIMACS> <RESULTS.txt> <0|1>
+XCL_EMULATION_MODE=<EMU_TYPE> ./test.<EMU_TYPE>.out workload-<EMU_TYPE>.xclbin ../../config/configuration.json <input DIMACS> <output results.txt> <0|1>
 
 # Hardware
-./test.hw.out workload-hw.xclbin ../../config/configuration.json <DIMACS> answers.txt <0|1>
+./test.hw.out workload-hw.xclbin ../../config/configuration.json <input DIMACS> <output results.txt> <0|1>
 ```
 The last argument is the expected SAT result (1 for SAT, 0 for UNSAT).
 
-## Configuration knobs
-Override these CMake options as needed:
-- `-DEMU_TYPE=sw_emu|hw_emu|hw`
-- `-DPLATFORM=xilinx_u55c_gen3x16_xdma_3_202210_1`
-- `-DFREQ_SC=235` (MHz for link)
-- `-DCONNECTIVITY_FILE=<path>` (defaults to `config/k2k.cfg`)
-- `-DCONFIG_FILE=<path>` (defaults to `config/configuration.json`)
-- `-DDATA_PATH=<path>` (defaults to repo `SAT_test_cases`)
-
-## HLS reports
-When configured with `-DEMU_TYPE=hw`, collect HLS synth reports:
-```bash
-make EMU_TYPE=hw hw_reports
-```
-Reports are copied into `FPGArpt/` at the repo root.
-
 ## Notes
-- CMake finds XRT and Vitis HLS via `cmake/FindXRT.cmake` and `cmake/FindVitisHLS.cmake`.
-- All outputs live under `build/<emu>/bin`; temp/reports under `build/<emu>/_x`.
-- No absolute paths are required; data is relative to the repo.
+- Our solver may not be able to solve the instance due to running out of on-chip memory during the solving process. The maximum supported instance size is **32,768 variables** and **131,072 clauses**.
+- design frequency target (`FREQ_SC`) is 235 MHz defined in [CMakeLists.txt](CMakeLists.txt)
 
 ## Publication
 To cite this work:
