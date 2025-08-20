@@ -1,5 +1,0 @@
-#add_cells_to_pblock [get_pblocks pblock_dynamic_SLR2] [get_cells [list level0_i/level1/level1_i/ulp/solver_1/inst/gmemLitStore1_m_axi_U]]
-#add_cells_to_pblock [get_pblocks pblock_dynamic_SLR2] [get_cells [list level0_i/level1/level1_i/ulp/solver_1/inst/gmemLitStore3_m_axi_U]]
-#add_cells_to_pblock [get_pblocks pblock_dynamic_SLR2] [get_cells [list level0_i/level1/level1_i/ulp/solver_1/inst/gmemLitStoreRead_m_axi_U]]
-#add_cells_to_pblock [get_pblocks pblock_dynamic_SLR2] [get_cells [list level0_i/level1/level1_i/ulp/solver_1/inst/gmemLearnMisc1_m_axi_U]]
-#add_cells_to_pblock [get_pblocks pblock_dynamic_SLR2] [get_cells [list level0_i/level1/level1_i/ulp/solver_1/inst/gmemLearnMisc2_m_axi_U]]

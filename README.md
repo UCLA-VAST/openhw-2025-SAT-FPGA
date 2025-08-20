@@ -1,71 +1,111 @@
-# FPGA25_artifact
-## Instructions:
+# SAT-Accel (FPGA25 Artifact)
 
-Following needs to be installed and is the version used for our design:  
--XRT version 2.14.384  
--Vitis version 2022.2  
--xilinx_u55c_gen3x16_xdma_3_202210_1 platform  
--gcc/g++ version 10+  
+Modern SAT solver accelerated on AMD/Xilinx FPGA. This repo uses a clean CMake + Make flow with per-EMU build dirs under `build/<emu>/bin`.
 
-Provided is a shell script (./runCompile.sh) to compile the HLS code to generate the bitstream.
-However, for your convenience, an executable and the FPGA bitstream is already provided. 
-In the shell script, the path for VITIS_INCLUDE and XRT_INCLUDE need to be changed to point to your include path.
+## Prerequisites
+- XRT 2.14.384
+- Vitis 2022.2 (HLS toolchain available)
+- Platform: `xilinx_u55c_gen3x16_xdma_3_202210_1`
+- gcc/g++ 10+
 
-```sh
-VITIS_INCLUDE="/opt/xilinx/tools/Vitis_HLS/$VER/include" -> TO WHERE YOUR VITIS INCLUDE IS  
-XRT_INCLUDE="/opt/xilinx/xrt/include" -> TO WHERE YOUR XRT INCLUDE IS
+Environment setup options
+- Option A: source `env.sh` at the repo root, which sets up the Xilinx toolchains (XRT/Vitis HLS) so CMake can find headers and libraries.
+- Option B: ensure XRT and Vitis HLS are on PATH yourself (xbutil available; Vitis HLS settings sourced).
+
+Example:
+```bash
+source /opt/xilinx/xrt/setup.sh
+source /opt/xilinx/tools/Vitis_HLS/2022.2/settings64.sh
 ```
 
-The same needs to be done with the source command.
+## Repository layout
+- `host/` – host application sources and headers
+- `hls/src/` – HLS kernel sources
+- `include/` – shared headers (includes `include/rapidjson`)
+- `config/` – configuration files (`configuration.json`, `k2k.cfg`)
+- `SAT_test_cases/` – input DIMACS instances
+- `FPGArpt/` – HLS reports (generated for `EMU_TYPE=hw`)
 
-```sh
-source /opt/xilinx/xrt/setup.sh -> TO WHERE YOUR XRT SETUP SCRIPT IS  
-source /opt/xilinx/tools/Vitis_HLS/$VER/settings64.sh -> TO WHERE YOUR VITIS_HLS SETUP SCRIPT IS  
-```
-To build for real hardware:  
-```sh
-./runCompile hls && ./runCompile hw  
-```
+## Quick start (Makefile shortcuts)
+Choose an emulation type: `sw_emu | hw_emu | hw`. Use EMU_TYPE to select the mode.
 
-To run simulation for software and hardware emulation:  
-```sh
-./runCompile doall  
-```
-
-## To run hardware execution after hardware build:  
--Enable host memory with the command: 
-```sh
-sudo PATH_TO_XBUTIL/xbutil configure --host-mem -d DEVICE_ID -s 1G ENABLE  (only need to do once)
-```
-where PATH_TO_XBUTIL is the install path for xbutil and DEVICE_ID is the device id of the U55C FPGA. The device id command can be found with xbutil examine -d.  
-
-### To run provided testcases:
--First compile openCL with ./runCompile.sh opencl  
--Then run the ./testcases.sh  
--A .txt file (which is in CSV format) called answers.txt will be found in src/bin  
--ColumnJ is the FPGA runtime in seconds.  
--Please note answers.txt is an appended file. Therefore, it is advised to remove it for new runs.
-
-### To run other SAT instances:
-```sh
-cd src/bin
-./test.real.out workload-hw.xclbin ../configuration.json <YOU_SAT_DIMACS> <SAVE_METRICS_FILE.TXT> <0_OR_1>
+Software emulation end-to-end:
+```bash
+make EMU_TYPE=sw_emu run -j
 ```
 
--To verify our solver, the SAT instance needed to match other solvers. Therefore, you must know beforehand if it is SAT(1) or UNSAT(0).  
--You should modify the host.cpp in src to your desire to not do this check.  
--If host.cpp is modified, remember to recompile with ./runCompile.sh opencl  
-
-## To run MiniSat or Kissat:  
--First clone repository and follow the install instructions provided by those authors.  
-https://github.com/niklasso/minisat  
-https://github.com/arminbiere/kissat  
--Locate the installed executables and run each individual SAT instance, for example:  
-```sh
-./minisat PATH_TO_DIMACS/unsat/4_4_2.dimacs  
-./kisat PATH_TO_DIMACS/unsat/4_4_2.dimacs
+Hardware emulation end-to-end:
+```bash
+make EMU_TYPE=hw_emu run -j
 ```
-where PATH_TO_DIMACS is the folder SAT_test_cases in this repository.  
+
+Hardware bitstream link (no run):
+```bash
+make EMU_TYPE=hw linkkernel -j
+```
+
+## Makefile targets
+- `configure`  – configure CMake in `build/<EMU_TYPE>`
+- `compilecl`  – build the host app for `<EMU_TYPE>`
+- `compilekernel` – compile all kernels to `.xo` for `<EMU_TYPE>` (parallel)
+- `linkkernel` – link `.xo` into `workload-<EMU_TYPE>.xclbin`
+- `run`        – build and run the testcase suite for `<EMU_TYPE>`
+- `hw_reports` – copy HLS synth reports into `FPGArpt/` (only meaningful for `EMU_TYPE=hw`)
+- `clean`      – remove only `build/<EMU_TYPE>`
+- `clean-all`  – remove the entire `build/`
+
+Tip: pass `-j` for parallel builds. Example: `make EMU_TYPE=hw_emu compilekernel -j`.
+
+## Advanced: direct CMake usage
+You can work directly with CMake/Make targets if you prefer:
+```bash
+cmake -S . -B build/sw_emu -DEMU_TYPE=sw_emu
+cmake --build build/sw_emu --target compilecl --parallel
+cmake --build build/sw_emu --target compilekernel --parallel
+cmake --build build/sw_emu --target linkkernel --parallel
+cmake --build build/sw_emu --target run --parallel
+```
+
+Generated artifacts (per EMU):
+- `build/<emu>/bin/test.<emu>.out`
+- `build/<emu>/bin/workload-<emu>.xclbin`
+- `build/<emu>/bin/emconfig.json`
+
+## Running testcases and custom inputs
+The `run` target executes the appropriate testcase script based on `EMU_TYPE`:
+- `sw_emu` and `hw_emu`: runs `testcases_sim.sh` and writes `result_<emu>.txt` into `build/<emu>/bin`.
+- `hw`: runs `testcases.sh` on the board.
+
+You can also run the host manually from `build/<emu>/bin`:
+```bash
+# Emulation
+XCL_EMULATION_MODE=<emu> ./test.<emu>.out workload-<emu>.xclbin ../../config/configuration.json <DIMACS> <RESULTS.txt> <0|1>
+
+# Hardware
+./test.hw.out workload-hw.xclbin ../../config/configuration.json <DIMACS> answers.txt <0|1>
+```
+The last argument is the expected SAT result (1 for SAT, 0 for UNSAT).
+
+## Configuration knobs
+Override these CMake options as needed:
+- `-DEMU_TYPE=sw_emu|hw_emu|hw`
+- `-DPLATFORM=xilinx_u55c_gen3x16_xdma_3_202210_1`
+- `-DFREQ_SC=235` (MHz for link)
+- `-DCONNECTIVITY_FILE=<path>` (defaults to `config/k2k.cfg`)
+- `-DCONFIG_FILE=<path>` (defaults to `config/configuration.json`)
+- `-DDATA_PATH=<path>` (defaults to repo `SAT_test_cases`)
+
+## HLS reports
+When configured with `-DEMU_TYPE=hw`, collect HLS synth reports:
+```bash
+make EMU_TYPE=hw hw_reports
+```
+Reports are copied into `FPGArpt/` at the repo root.
+
+## Notes
+- CMake finds XRT and Vitis HLS via `cmake/FindXRT.cmake` and `cmake/FindVitisHLS.cmake`.
+- All outputs live under `build/<emu>/bin`; temp/reports under `build/<emu>/_x`.
+- No absolute paths are required; data is relative to the repo.
 
 ## Publication
 To cite this work:

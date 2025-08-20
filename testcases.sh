@@ -1,11 +1,14 @@
-7#!/bin/bash
+#!/bin/bash
 
 RD="\033[0;31m"
 GN="\033[0;32m"
 NC="\033[0m"
 
 cd src/bin
-DATA_PATH="../../SAT_test_cases"
+if [ -z "${DATA_PATH}" ]; then
+	echo -e "${RD}DATA_PATH is not set. Pass via environment or CMake."
+	exit 1
+fi
 BENCHMARKS=()
 
 BENCHMARKS+=("$DATA_PATH/sat/dp10s10.shuffled.dimacs",1)
@@ -83,7 +86,7 @@ for GET_BENCHMARK in "${BENCHMARKS[@]}"
 do
     IFS=, read path correct <<< $GET_BENCHMARK
     #yes | xbutil reset -d 0000:81:00.1
-    ./test.real.out workload-hw.xclbin ../configuration.json $path answers.txt $correct
+	./test.hw.out workload-hw.xclbin ../configuration.json $path answers.txt $correct
 
 	exitCode=$?
     if [ $exitCode -ne 0 ]

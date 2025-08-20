@@ -4,7 +4,10 @@ RD="\033[0;31m"
 GN="\033[0;32m"
 NC="\033[0m"
 
-DATA_PATH="../../SAT_test_cases"
+if [ -z "${DATA_PATH}" ]; then
+	echo -e "${RD}DATA_PATH is not set. Pass via environment or CMake.${NC}"
+	exit 1
+fi
 BENCHMARKS=()
 
 BENCHMARKS+=("$DATA_PATH/unsat/4_4_2.txt",0)
