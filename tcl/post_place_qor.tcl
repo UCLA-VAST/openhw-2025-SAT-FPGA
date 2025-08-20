@@ -1,5 +1,5 @@
-## Derive build directory from current Vivado working directory (typically .../_x/link/vivado/vpl)
-set builddir [file normalize [file join [pwd] ../../../..]]
+## Build directory is injected by CMake at configure time.
+set builddir "@CMAKE_BINARY_DIR@"
 report_qor_suggestions -name qor_suggestions -max_paths 100 -max_strategies 3
 report_qor_suggestions -of_objects [get_qor_suggestions]
 file mkdir [file join $builddir qor_suggestions]

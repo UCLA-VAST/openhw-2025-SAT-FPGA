@@ -1,6 +1,5 @@
-## Derive build directory from current Vivado working directory (typically .../_x/link/vivado/vpl)
-set builddir [file normalize [file join [pwd] ../../../..]]
-set VIVADO_LOG [file join $builddir _x link vivado vpl vivado.log]
+## Vivado log path is injected by CMake at configure time.
+set VIVADO_LOG "@VIVADO_LOG_PATH@"
 
 set NLOOPS 5 
 set TNS_PREV 0

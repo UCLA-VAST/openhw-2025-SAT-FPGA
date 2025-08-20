@@ -42,6 +42,13 @@ if(EMU_TYPE STREQUAL "hw_emu" OR EMU_TYPE STREQUAL "hw")
   list(APPEND EXTRA_ARGS -DFPGA_HW)
 endif()
 
+# Prepare Tcl scripts at configure time (inject build dir and vivado log path)
+file(MAKE_DIRECTORY ${TCL_DIR})
+set(VIVADO_LOG_PATH "${CMAKE_BINARY_DIR}/_x/link/vivado/vpl/vivado.log")
+configure_file(${TCL_SCRIPTS_DIR}/constrain_blocks.tcl ${TCL_DIR}/constrain_blocks.tcl COPYONLY)
+configure_file(${TCL_SCRIPTS_DIR}/phys_opt_loop.tcl ${TCL_DIR}/phys_opt_loop.tcl @ONLY)
+configure_file(${TCL_SCRIPTS_DIR}/post_place_qor.tcl ${TCL_DIR}/post_place_qor.tcl @ONLY)
+
 # Create compile commands per kernel
 foreach(idx RANGE 0 6)
   list(GET KERNEL_NAMES ${idx} KNAME)
@@ -109,10 +116,6 @@ endif()
 set(XCLBIN ${CMAKE_BINARY_DIR}/bin/workload-${EMU_TYPE}.xclbin)
 add_custom_command(
   OUTPUT ${XCLBIN}
-  # Prepare Tcl scripts (always safe; properties only used for EMU_TYPE=hw)
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${TCL_DIR}
-  COMMAND ${CMAKE_COMMAND} -E copy ${TCL_SCRIPTS_DIR}/constrain_blocks.tcl ${TCL_DIR}/constrain_blocks.tcl
-  COMMAND ${CMAKE_COMMAND} -E copy ${TCL_SCRIPTS_DIR}/phys_opt_loop.tcl ${TCL_DIR}/phys_opt_loop.tcl
   COMMAND v++ -l -t ${EMU_TYPE} ${COMMON_VPP_ARGS}
           --config ${CONNECTIVITY_FILE}
           --kernel_frequency ${FREQ_SC}
