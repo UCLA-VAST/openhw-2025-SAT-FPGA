@@ -53,14 +53,13 @@ foreach(idx RANGE 0 6)
   set(CHECK_STAMP ${CMAKE_BINARY_DIR}/.hls_compilecheck_${KNAME}.stamp)
   add_custom_command(
     OUTPUT ${CHECK_STAMP}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/.hls_check/${KNAME}
     COMMAND ${CMAKE_CXX_COMPILER} -std=c++17 -w -O3 -fsyntax-only
       -I${XRT_INCLUDE_DIRS}
       -I${VitisHLS_INCLUDE_DIRS}
       -I${CMAKE_SOURCE_DIR}/include
       ${SRCS}
     COMMAND ${CMAKE_COMMAND} -E touch ${CHECK_STAMP}
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/.hls_check/${KNAME}
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     DEPENDS ${SRCS}
     COMMENT "C++ compile check for kernel ${KNAME}"
     VERBATIM)
@@ -72,7 +71,7 @@ foreach(idx RANGE 0 6)
             ${SRCS}
             -o ${XO}
   DEPENDS ${SRCS} ${CHECK_STAMP}
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Compiling kernel ${KNAME} (${EMU_TYPE}) at ${KCLOCK}"
     VERBATIM)
   list(APPEND XO_LIST ${XO})
