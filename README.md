@@ -1,6 +1,9 @@
 # A Complete SAT Solver on a U55C FPGA (Team AOHW25-894)
 This project demonstrates accelerating a complete SAT solver on a U55C FPGA. SAT solving is an important workload due to its wide use in different domains such as artificial intelligence, circuit verification, FPGA routing, etc.
 
+<img width="450" height="450" alt="image" src="https://github.com/user-attachments/assets/9d2e3c92-0af9-4a4f-836f-ad0f02973dc9" />
+<img width="280" height="400" alt="routed_SAT_solver" src="https://github.com/user-attachments/assets/bbda18e1-0c36-432b-a4b5-6822ee0269ed" />
+
 ## Prerequisites
 - XRT 2.14.384
 - Vitis 2022.2 (HLS toolchain available)
