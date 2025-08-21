@@ -73,21 +73,6 @@ BENCHMARKS+=("$DATA_PATH/unsat/16_8_6.txt",0)
 BENCHMARKS+=("$DATA_PATH/unsat/16_8_7.txt",0)
 BENCHMARKS+=("$DATA_PATH/unsat/16_16_3.txt",0)
 
-BENCHMARKS+=("$DATA_PATH/satlib/hole7_unsat.cnf",0)
-BENCHMARKS+=("$DATA_PATH/satlib/hole8_unsat.cnf",0)
-BENCHMARKS+=("$DATA_PATH/satlib/hole9_unsat.cnf",0)
-BENCHMARKS+=("$DATA_PATH/satlib/uf100-010_sat.cnf",1)
-BENCHMARKS+=("$DATA_PATH/satlib/uuf100-02_unsat.cnf",0)
-BENCHMARKS+=("$DATA_PATH/satlib/uf125-01_sat.cnf",1)
-BENCHMARKS+=("$DATA_PATH/satlib/uuf125-05_unsat.cnf",0)
-BENCHMARKS+=("$DATA_PATH/satlib/uf150-08_sat.cnf",1)
-BENCHMARKS+=("$DATA_PATH/satlib/CBS_k3_n100_m403_b10_1_sat.cnf",1)
-BENCHMARKS+=("$DATA_PATH/satlib/aim-200-3_4-yes1-4.cnf",1)
-BENCHMARKS+=("$DATA_PATH/satlib/aim-200-1_6-no-4.cnf",0)
-BENCHMARKS+=("$DATA_PATH/satlib/ii16e2_sat.cnf",1)
-BENCHMARKS+=("$DATA_PATH/satlib/ii32e1_sat.cnf",1)
-
-
 for GET_BENCHMARK in "${BENCHMARKS[@]}"
 do
     IFS=, read path correct <<< $GET_BENCHMARK

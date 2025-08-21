@@ -36,7 +36,10 @@ make EMU_TYPE=hw_emu run -j
 ```
 
 Hardware bitstream end-to-end:
+-Enable host memory first. PATH_TO_XBUTIL is the install path for xbutil and DEVICE_ID is the device id of the U55C FPGA. The device id command can be found with xbutil examine -d.
+-Change the DEVICE_ID in testcases.sh. Replace 0000:81:00.1 with your FPGA device id.
 ```bash
+sudo PATH_TO_XBUTIL/xbutil configure --host-mem -d DEVICE_ID -s 1G ENABLE  (only need to do once)
 make EMU_TYPE=hw run -j
 ```
 

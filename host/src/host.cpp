@@ -398,7 +398,7 @@ bool solve(std::string xclBinFile, std::string inputFilePath, std::string output
 		context = cl::Context(device, NULL, NULL, NULL, &err);
 		if(err != CL_SUCCESS){
 			std::cerr << "Could not create context device, error number: " << err << "\n";
-			return false;
+			continue;
 		}
 
 		q = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE|CL_QUEUE_PROFILING_ENABLE, &err);
