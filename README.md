@@ -1,6 +1,8 @@
 # A Complete SAT Solver on a U55C FPGA (Team AOHW25-894)
 This project demonstrates accelerating a complete SAT solver on a U55C FPGA. SAT solving is an important workload due to its wide use in different domains such as artificial intelligence, circuit verification, FPGA routing, etc.
 
+[![Demo Video](https://img.youtube.com/vi/DazaGU59fVo/0.jpg)](https://www.youtube.com/watch?v=DazaGU59fVo)
+
 <img width="450" height="450" alt="image" src="https://github.com/user-attachments/assets/9d2e3c92-0af9-4a4f-836f-ad0f02973dc9" />
 <img width="280" height="400" alt="routed_SAT_solver" src="https://github.com/user-attachments/assets/bbda18e1-0c36-432b-a4b5-6822ee0269ed" />
 
@@ -94,3 +96,11 @@ The last argument is the expected SAT result (1 for SAT, 0 for UNSAT).
 ## Notes
 - Our solver may not be able to solve the instance due to running out of on-chip memory during the solving process. The maximum supported instance size is **32,768 variables** and **131,072 clauses**.
 - design frequency target (`FREQ_SC`) is 235 MHz defined in [CMakeLists.txt](CMakeLists.txt)
+
+## Contributors
+| Name          | Role        | Affiliation | Email               |
+|---------------|-------------|-------------|---------------------|
+| Michael Lo    | PhD Student | UCLA        | milo168@ucla.edu    |
+| Huifeng Ke    | PhD Student | UCLA        | jakeke@cs.ucla.edu  |
+| Tony Nowatzki | Advisor     | UCLA        | tjn@cs.ucla.edu     |
+| Jason Cong    | Advisor     | UCLA        | cong@cs.ucla.edu    |
