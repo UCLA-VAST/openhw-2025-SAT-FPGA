@@ -9,6 +9,8 @@
 #include <set>
 #include <chrono>
 #include <queue>
+#include <cctype>
+#include <stdexcept>
 #include "rapidjson/rapidjson.h"
 #include "rapidjson/document.h"
 #include "rapidjson/istreamwrapper.h"
@@ -47,13 +49,13 @@ bool compareFunc(int a, int b){
     return abs(a) < abs(b);
 }
 
-void cleanUp(problemData pd){
-    free(pd.clauseStore);
-    free(pd.cmd);
-    free(pd.litStore);
-    free(pd.answerStack);
-    free(pd.lmd);
-    free(pd.clsStates);
+void cleanUp(problemData &pd){
+    if (pd.clauseStore) { free(pd.clauseStore); pd.clauseStore = nullptr; }
+    if (pd.cmd)         { free(pd.cmd);         pd.cmd = nullptr; }
+    if (pd.litStore)    { free(pd.litStore);    pd.litStore = nullptr; }
+    if (pd.answerStack) { free(pd.answerStack); pd.answerStack = nullptr; }
+    if (pd.lmd)         { free(pd.lmd);         pd.lmd = nullptr; }
+    if (pd.clsStates)   { free(pd.clsStates);   pd.clsStates = nullptr; }
 }
 
 void parseJSON(std::string filePath, rapidjson::Document& configuration){
@@ -93,6 +95,10 @@ void parseDIMACS(std::string filePath, problemData& pd, const rapidjson::Documen
             if(token != ""){
                 tokens.push_back(token);
             }
+        }
+
+        if(tokens.empty()){
+            continue; // skip blank or whitespace-only lines
         }
 
         if(tokens[0] == "c"){
@@ -203,7 +209,7 @@ void parseDIMACS(std::string filePath, problemData& pd, const rapidjson::Documen
             }
             if(index1D > _HOST_MAX_CLAUSE_ELEMENTS){
                 std::cout << "WENT OVER ALLOCATION LIMIT - INSERT CLAUSE: " << i+1 << "\n";
-                exit(EXIT_FAILURE);
+                throw std::runtime_error("unsupported_instance");
             }
         }
 
@@ -213,7 +219,7 @@ void parseDIMACS(std::string filePath, problemData& pd, const rapidjson::Documen
                 index1D++;
                 if(index1D > _HOST_MAX_CLAUSE_ELEMENTS){
                     std::cout << "WENT OVER ALLOCATION LIMIT - ZERO INSERT CLAUSE: " << i+1 << "\n";
-                    exit(EXIT_FAILURE);
+                    throw std::runtime_error("unsupported_instance");
                 }
             }
         }
@@ -286,7 +292,7 @@ void parseDIMACS(std::string filePath, problemData& pd, const rapidjson::Documen
             
                 if(index1D > _HOST_MAX_LITERAL_ELEMENTS){
                     std::cout << "WENT OVER ALLOCATION LIMIT - INSERT: LITERAL " << i+1 << " " << a << "\n";
-                    exit(EXIT_FAILURE);
+                    throw std::runtime_error("unsupported_instance");
                 }
             }
 
@@ -295,7 +301,7 @@ void parseDIMACS(std::string filePath, problemData& pd, const rapidjson::Documen
                 index1D++;
                 if(index1D > _HOST_MAX_LITERAL_ELEMENTS){
                     std::cout << "WENT OVER ALLOCATION LIMIT - FREE SPACE 1: " << i+1 << " " << a << "\n";
-                    exit(EXIT_FAILURE);
+                    throw std::runtime_error("unsupported_instance");
                 }
             }
             
@@ -322,20 +328,20 @@ void parseDIMACS(std::string filePath, problemData& pd, const rapidjson::Documen
 
     if(pd.md.numLiterals > _FPGA_MAX_LITERALS){
         std::cout << "Exceeded max literal support: " << pd.md.numLiterals << "\n";
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("unsupported_instance");
     }
     if(pd.md.numClauses > _FPGA_MAX_CLAUSES){
         std::cout << "Exceeded max clause support: " << pd.md.numClauses << "\n";
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("unsupported_instance");
     }
     if(pd.md.literalElements > _HOST_MAX_LITERAL_ELEMENTS){
         std::cout << "Exceeded max literal elements support: " << pd.md.literalElements << "\n";
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("unsupported_instance");
     }
     
     if(pd.md.clauseElements > _HOST_MAX_CLAUSE_ELEMENTS){
         std::cout << "Exceeded max clause elements support: " << pd.md.clauseElements << "\n";
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("unsupported_instance");
     }
 
     /*std::cout << "PRINT: " << "\n";
@@ -802,11 +808,49 @@ int main(int argc, char* argv[]){
     //4 results.txt
     //5 true answer
 
-    problemData pd;
+    problemData pd{}; // zero-initialize pointers to avoid freeing garbage on early exits
     rapidjson::Document configuration;
     parseJSON(std::string(argv[2]), configuration);
-    parseDIMACS(std::string(argv[3]), pd, configuration);
-    solve(std::string(argv[1]), std::string(argv[3]), std::string(argv[4]), pd, configuration, std::stoi(argv[5]));
-    cleanUp(pd);
-    return 0;
+
+    try {
+        parseDIMACS(std::string(argv[3]), pd, configuration);
+        solve(std::string(argv[1]), std::string(argv[3]), std::string(argv[4]), pd, configuration, std::stoi(argv[5]));
+        cleanUp(pd);
+        return 0;
+    } catch (const std::runtime_error &e) {
+        if (std::string(e.what()) == "unsupported_instance") {
+            std::cout << "Skipping unsupported instance; logging zero-time row" << "\n";
+
+            std::ofstream outputFile;
+            outputFile.open(std::string(argv[4]), std::ios_base::app);
+            if(!outputFile.is_open()){
+                std::cout << "Could not open results file" << "\n";
+                return EXIT_FAILURE;
+            }
+
+            // Write zero-time CSV row; unknown counts default to 0 here
+            outputFile << std::filesystem::path(std::string(argv[3])).stem() << "," << "1" << ","
+                       << 0 << "," << 0 << "," // Literals, Clauses
+                       << 0 << "," // Time(s)
+                       << 0 << "," << 0 << "," << 0 << "," // Decisions, Conflicts, Restarts
+                       << 0 << "," << 0 << "," // Load Cycle, Load %
+                       << 0 << "," << 0 << "," // Decide Cycle, Decide %
+                       << 0 << "," << 0 << "," // Propagate Cycle, Propagate %
+                       << 0 << "," << 0 << "," // Learn Cycle, Learn %
+                       << 0 << "," << 0 << "," // Min-Btrk Cycle, Min-Btrk %
+                       << 0 << "," << 0 << "," // Save Cycle, Save %
+                       << 0 << "," << 0 << "," // Allocate Cycle, Allocate %
+                       << 0 << "," << 0 << "," // NOT USED, NOT USED
+                       << 0 << "," << 0 << "," // Delete Cycle, Delete %
+                       << 0 << "," << 0 << "," // Literals Checked, Avg Prop Latency
+                       << 0               // Total Cycles
+                       << "\r\n";
+            outputFile.close();
+
+            return 0;
+        }
+        // Unexpected runtime error
+        std::cerr << "Fatal error: " << e.what() << "\n";
+        return EXIT_FAILURE;
+    }
 }
