@@ -43,6 +43,7 @@ def parse_results(path: str) -> List[Tuple[str, float, bool]]:
         header_map = {name.strip(): idx for idx, name in enumerate(header)}
         name_idx = header_map.get('CNF NAME', 0)
         time_idx = header_map.get('Time (s)', None)
+        solve_idx = header_map.get('SOLVE STATUS', None)
     # We ignore SOLVE STATUS for PAR-2; per request, use sim_time==0 as unfinished
 
         results: List[Tuple[str, float, bool]] = []
@@ -65,8 +66,21 @@ def parse_results(path: str) -> List[Tuple[str, float, bool]]:
                         time_s = float(cell)
                         break
 
-            # Determine solved/unsolved for PAR-2: solved iff time_s > 0
-            solved = time_s > 0.0
+            # Read solve status if present (treat missing as non-zero)
+            solve_status_val = 1
+            if solve_idx is not None and solve_idx < len(row):
+                val = row[solve_idx].strip()
+                if _is_float(val):
+                    try:
+                        solve_status_val = int(float(val))
+                    except Exception:
+                        solve_status_val = 1
+                elif val == '0':
+                    solve_status_val = 0
+
+            # Determine solved/unsolved for PAR-2:
+            # unfinished if time_s == 0 OR SOLVE STATUS == 0
+            solved = (time_s > 0.0) and (solve_status_val != 0)
 
             time_ms = time_s * 1000.0
             results.append((name, time_ms, solved))
@@ -99,12 +113,13 @@ def main(argv: List[str]) -> int:
 
     try:
         writer = csv.writer(out)
-        writer.writerow(['name', 'sim_time_ms', 'par2_ms'])
+        # Removed sim_time_ms per request; only output name and par2_ms
+        writer.writerow(['name', 'par2_ms'])
         timeout_ms = float(args.timeout) * 1000.0
         for name, ms, solved in rows:
             # per-instance PAR-2 value in ms
             par2_ms = ms if solved else (2.0 * timeout_ms)
-            writer.writerow([name, f"{ms:.3f}", f"{par2_ms:.3f}"])
+            writer.writerow([name, f"{par2_ms:.3f}"])
     finally:
         if close_out:
             out.close()
@@ -114,15 +129,20 @@ def main(argv: List[str]) -> int:
     timeout = float(args.timeout)
     total = 0.0
     solved_cnt = 0
+    solved_ms_sum = 0.0
     for _, ms, solved in rows:
         if solved:
             total += ms
+            solved_ms_sum += ms
             solved_cnt += 1
         else:
             total += 2.0 * timeout * 1000.0
     n = len(rows)
     mean = (total / n) / 1000 if n > 0 else 0.0
     print(f"Summary: n={n}, timeout_s={timeout}, solved={solved_cnt}, par-2={mean:.3f}s", file=sys.stderr)
+    # Also print average simulation time excluding unfinished (solved-only mean)
+    mean_solved = (solved_ms_sum / solved_cnt) / 1000 if solved_cnt > 0 else 0.0
+    print(f"Average (solved only): {mean_solved:.3f}s", file=sys.stderr)
 
     return 0
 
